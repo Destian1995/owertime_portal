@@ -1,2 +1,5 @@
 Django>=4.2
 psycopg2-binary
+django-widget-tweaks
+openpyxl
+python-docx
