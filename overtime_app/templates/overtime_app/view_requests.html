@@ -1,0 +1,66 @@
+{% extends 'overtime_app/base.html' %}
+
+{% block title %}Все заявки{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Все заявки на переработку</h2>
+        <a href="{% url 'overtime_app:create_request' %}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            Создать новую заявку
+        </a>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+            <thead class="bg-gray-100">
+            <tr>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Номер</th>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">ФИО</th>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Начало</th>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Окончание</th>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Часы</th>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Причина</th>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Обоснование</th>
+                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Статус</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+            {% for req in requests %}
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="py-3 px-4">#{{ req.id }}</td>
+                <td class="py-3 px-4">{{ req.employee.full_name }}</td>
+                <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
+                <td class="py-3 px-4">{{ req.get_reason_display }}</td>
+                <td class="py-3 px-4 max-w-xs truncate" title="{{ req.justification }}">{{ req.justification }}</td>
+                <td class="py-3 px-4">
+                        <span class="px-3 py-1 rounded-full text-sm font-medium
+                            {% if req.status == 'approved' %}
+                                bg-green-100 text-green-800
+                            {% elif req.status == 'rejected' %}
+                                bg-red-100 text-red-800
+                            {% elif req.status == 'pending' %}
+                                bg-yellow-100 text-yellow-800
+                            {% elif req.status == 'draft' %}
+                                bg-gray-100 text-gray-800
+                            {% else %}
+                                bg-blue-100 text-blue-800
+                            {% endif %}">
+                            {{ req.get_status_display }}
+                        </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="py-6 px-4 text-center text-gray-500">
+                    Нет заявок
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
