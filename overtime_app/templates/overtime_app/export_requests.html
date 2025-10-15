@@ -1,0 +1,141 @@
+{% extends 'overtime_app/base.html' %}
+
+{% block title %}Выгрузка заявок{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Заголовок -->
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800">Выгрузка заявок</h1>
+        <p class="mt-2 text-gray-600">Фильтруйте и экспортируйте заявки</p>
+    </div>
+
+    <!-- Форма фильтров -->
+    <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 mb-8">
+        <form method="get" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">Причина</label>
+                    <select name="reason" id="reason" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Все</option>
+                        {% for value, label in reasons %}
+                        <option value="{{ value }}" {% if filters.reason == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% if is_manager %}
+                <div>
+                    <label for="employee_name" class="block text-sm font-medium text-gray-700 mb-2">ФИО сотрудника</label>
+                    <select name="employee_name" id="employee_name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Все</option>
+                        {% for emp in employees %}
+                        <option value="{{ emp.full_name }}" {% if filters.employee_name == emp.full_name %}selected{% endif %}>{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700 mb-2">Дата начала (от)</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ filters.start_date }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">Дата окончания (до)</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ filters.end_date }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Статус</label>
+                    <select name="status" id="status" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Все</option>
+                        {% for value, label in statuses %}
+                        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300">
+                    Применить фильтры
+                </button>
+
+                <!-- Кнопки экспорта -->
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="{% url 'overtime_app:export_requests_csv' %}?{{ request.GET.urlencode }}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center">
+                        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Экспортировать в CSV
+                    </a>
+
+                    <a href="{% url 'overtime_app:export_requests_word' %}?{{ request.GET.urlencode }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center">
+                        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Экспортировать в Word
+                    </a>
+                </div>
+
+                <a href="{% url 'overtime_app:dashboard' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300">
+                    Назад
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Таблица с результатами -->
+    <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Результаты</h2>
+        {% if requests %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                <thead class="bg-gray-100">
+                <tr>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Номер</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Сотрудник</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Начало</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Окончание</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Часы</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Причина</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Статус</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                {% for req in requests %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-3 px-4">#{{ req.id }}</td>
+                    <td class="py-3 px-4">{{ req.employee.full_name }}</td>
+                    <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
+                    <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
+                    <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
+                    <td class="py-3 px-4">{{ req.get_reason_display }}</td>
+                    <td class="py-3 px-4">
+                            <span class="px-3 py-1 rounded-full text-sm font-medium
+                                {% if req.status == 'approved' %}
+                                    bg-green-100 text-green-800
+                                {% elif req.status == 'rejected' %}
+                                    bg-red-100 text-red-800
+                                {% elif req.status == 'pending' %}
+                                    bg-yellow-100 text-yellow-800
+                                {% elif req.status == 'draft' %}
+                                    bg-gray-100 text-gray-800
+                                {% else %}
+                                    bg-blue-100 text-blue-800
+                                {% endif %}">
+                                {{ req.get_status_display }}
+                            </span>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">Нет заявок по заданным фильтрам</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
