@@ -8,7 +8,7 @@ urlpatterns = [
     path('', home, name='home'),
     path('login/', portal_login, name='portal_login'),
     path('register/', register, name='register'),
-    path('logout/', LogoutView.as_view(next_page='home'), name='logout'),
+    path('', LogoutView.as_view(next_page='home'), name='logout'),
     path('admin/', admin.site.urls),
     path('lk/', include('overtime_app.urls')),
 ]
