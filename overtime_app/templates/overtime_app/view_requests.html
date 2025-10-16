@@ -1,66 +1,115 @@
 {% extends 'overtime_app/base.html' %}
+{% load widget_tweaks %}
 
-{% block title %}Все заявки{% endblock %}
+{% block title %}Заявки подчинённых{% endblock %}
 
 {% block content %}
-<div class="bg-white rounded-lg shadow-md p-6">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Все заявки на переработку</h2>
-        <a href="{% url 'overtime_app:create_request' %}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-            Создать новую заявку
+<div class="w-full px-4 sm:px-6 lg:px-8">
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800">Заявки подчинённых</h1>
+    </div>
+
+    <!-- Кнопка выгрузки -->
+    <div class="mb-6 text-right">
+        <a href="{% url 'overtime_app:export_requests' %}?filter=subordinates"
+           class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Выгрузить заявки
         </a>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white rounded-lg overflow-hidden">
-            <thead class="bg-gray-100">
+    <!-- Таблица заявок -->
+    <div class="bg-white rounded-xl shadow-md overflow-x-auto relative">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
             <tr>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Номер</th>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">ФИО</th>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Начало</th>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Окончание</th>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Часы</th>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Причина</th>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Обоснование</th>
-                <th class="py-3 px-4 text-left text-gray-600 font-semibold">Статус</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Номер</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сотрудник</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Начало</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Окончание</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Часы</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Причина</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Обоснование</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
             </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-200">
             {% for req in requests %}
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="py-3 px-4">#{{ req.id }}</td>
-                <td class="py-3 px-4">{{ req.employee.full_name }}</td>
-                <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
-                <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
-                <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
-                <td class="py-3 px-4">{{ req.get_reason_display }}</td>
-                <td class="py-3 px-4 max-w-xs truncate" title="{{ req.justification }}">{{ req.justification }}</td>
-                <td class="py-3 px-4">
-                        <span class="px-3 py-1 rounded-full text-sm font-medium
-                            {% if req.status == 'approved' %}
-                                bg-green-100 text-green-800
-                            {% elif req.status == 'rejected' %}
-                                bg-red-100 text-red-800
-                            {% elif req.status == 'pending' %}
-                                bg-yellow-100 text-yellow-800
-                            {% elif req.status == 'draft' %}
-                                bg-gray-100 text-gray-800
-                            {% else %}
-                                bg-blue-100 text-blue-800
+            <tr>
+                <td class="px-4 py-4 whitespace-nowrap text-sm">{{ req.id }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm">{{ req.employee.full_name }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="px-4 py-4 whitespace-nowrap text-sm">{{ req.hours|floatformat:2 }}</td>
+                <td class="px-4 py-4 text-sm whitespace-normal break-words max-w-xs">{{ req.get_reason_display }}</td>
+                <td class="px-4 py-4 text-sm whitespace-normal break-words max-w-xs">{{ req.justification }}</td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    {% if req.status == 'pending' %}
+                    <!-- Кликабельный бейдж -->
+                    <button type="button"
+                            class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 cursor-pointer hover:bg-yellow-200"
+                            onclick="openDropdown(event, {{ req.id }})">
+                        {{ req.get_status_display }}
+                    </button>
+                    {% else %}
+                    <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if req.status == 'approved' %} bg-green-100 text-green-800
+                            {% elif req.status == 'rejected' %} bg-red-100 text-red-800
+                            {% elif req.status == 'rework' %} bg-orange-100 text-orange-800
+                            {% else %} bg-gray-100 text-gray-800
                             {% endif %}">
                             {{ req.get_status_display }}
                         </span>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="py-6 px-4 text-center text-gray-500">
-                    Нет заявок
-                </td>
+                <td colspan="8" class="px-4 py-4 text-center text-gray-500">Нет заявок</td>
             </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Глобальный dropdown -->
+<div id="global-dropdown" class="absolute w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 hidden"></div>
+
+<script>
+    function openDropdown(event, reqId) {
+        event.stopPropagation(); // чтобы клик не закрыл сразу
+        const dropdown = document.getElementById('global-dropdown');
+        dropdown.innerHTML = `
+        <form method="post" action="/lk/request/${reqId}/change-status/" class="px-4 py-2 hover:bg-gray-100">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="hidden" name="decision" value="approved">
+            <button type="submit" class="w-full text-left">✅ Согласовать</button>
+        </form>
+        <form method="post" action="/lk/request/${reqId}/change-status/" class="px-4 py-2 hover:bg-gray-100">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="hidden" name="decision" value="rejected">
+            <button type="submit" class="w-full text-left">❌ Отклонить</button>
+        </form>
+    `;
+        dropdown.classList.remove('hidden');
+
+        // позиционируем под кнопкой
+        const rect = event.target.getBoundingClientRect();
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+        dropdown.style.top = `${rect.bottom + scrollTop}px`;
+        dropdown.style.left = `${rect.left + scrollLeft}px`;
+    }
+
+    // Закрываем dropdown при клике вне его
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('global-dropdown');
+        if (!dropdown.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+</script>
 {% endblock %}

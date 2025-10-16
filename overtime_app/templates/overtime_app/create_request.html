@@ -22,6 +22,9 @@
                 <div class="md:col-span-2 {% if field.name == 'start_datetime' or field.name == 'end_datetime' %}md:col-span-1{% endif %}">
                     <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
                         {{ field.label }}
+                        {% if field.name == 'justification' %}
+                        <span id="char-count-label">(0 из 200 символов)</span>
+                        {% endif %}
                         {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
                     </label>
 
@@ -49,7 +52,7 @@
                         </div>
 
                         <!-- Инпут -->
-                        {% if field.name in 'start_datetime,end_datetime,justification' %}
+                        {% if field.name == 'justification' %}
                         {{ field|add_class:"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" }}
                         {% else %}
                         {{ field|add_class:"border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" }}
@@ -98,9 +101,33 @@
     </div>
 </div>
 
+<!-- JavaScript для счётчика символов -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.querySelector('#id_justification');
+        const counterLabel = document.getElementById('char-count-label');
+
+        if (textarea) {
+            // Ограничиваем ввод до 200 символов
+            textarea.setAttribute('maxlength', '200');
+
+            // Обновляем счётчик при загрузке (если уже есть текст)
+            updateCounter();
+
+            // Обновляем счётчик при вводе
+            textarea.addEventListener('input', updateCounter);
+        }
+
+        function updateCounter() {
+            const length = textarea.value.length;
+            counterLabel.textContent = `(${length} из 200 символов)`;
+        }
+    });
+</script>
+
 <!-- Flatpickr CSS & JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css  ">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js  "></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

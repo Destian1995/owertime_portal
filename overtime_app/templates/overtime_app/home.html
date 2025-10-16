@@ -41,19 +41,16 @@
                     <p class="mt-2 text-gray-600">Войдите в свой аккаунт для доступа к порталу</p>
                 </div>
 
-                <div class="mt-8">
+                <div class="mt-8 space-y-4">
                     <a href="{% url 'portal_login' %}" class="w-full flex justify-center items-center px-4 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                         Войти на портал
                     </a>
+
+                    <button onclick="resetPassword()" class="w-full flex justify-center items-center px-4 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
+                        Сбросить пароль
+                    </button>
                 </div>
-                <div class="mt-6 text-center">
-                    <p class="text-sm text-gray-600">
-                        Нет аккаунта?
-                        <a href="{% url 'register' %}" class="font-medium text-blue-600 hover:text-blue-500">
-                            Зарегистрироваться
-                        </a>
-                    </p>
-                </div>
+
                 <div class="mt-6 text-center">
                     <p class="text-sm text-gray-600">
                         Нужна помощь? Обратитесь в службу поддержки
@@ -69,6 +66,12 @@
             © {% now "Y" %} Портал переработок. Атон.
         </div>
     </footer>
+
+    <script>
+        function resetPassword() {
+            window.location.href = '{% url "overtime_app:reset_password" %}';
+        }
+    </script>
 </div>
 </body>
 </html>
