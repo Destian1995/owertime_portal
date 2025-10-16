@@ -3,3 +3,4 @@ psycopg2-binary
 django-widget-tweaks
 openpyxl
 python-docx
+workalendar
