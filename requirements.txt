@@ -4,3 +4,6 @@ django-widget-tweaks
 openpyxl
 python-docx
 workalendar
+gunicorn
+python-decouple
+whitenoise
