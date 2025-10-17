@@ -24,12 +24,6 @@ HOST_PORT="8000"
 # Путь к .env файлу (предполагается, что он в PROJECT_DIR)
 ENV_FILE="$PROJECT_DIR/.env"
 
-# Команды для выполнения миграций и статики
-MAKEMIGRATIONS_COMMAND="python manage.py makemigrations"
-MIGRATE_COMMAND="python manage.py migrate"
-COLLECTSTATIC_COMMAND="python manage.py collectstatic --noinput --clear"
-CREATE_SUPERUSER_COMMAND="python manage.py createsuperuser --noinput || true"  # Опционально
-
 echo "=== Начинаю процесс пересоздания Docker-контейнера ==="
 
 # Перейти в директорию проекта
@@ -69,9 +63,8 @@ else
     exit 1
 fi
 
-# Запустить новый контейнер
+# Запустить новый контейнер с volume для статики
 echo "Запускаю новый контейнер: $CONTAINER_NAME"
-# Проверяем, существует ли .env файл
 if [ -f "$ENV_FILE" ]; then
     echo "Использую .env файл: $ENV_FILE"
     sudo docker run -d \
@@ -79,6 +72,7 @@ if [ -f "$ENV_FILE" ]; then
         -p $HOST_PORT:$APP_PORT \
         --add-host host.docker.internal:host-gateway \
         --env-file "$ENV_FILE" \
+        -v ${CONTAINER_NAME}_static:/app/staticfiles \
         $FULL_IMAGE_NAME
 else
     echo "Предупреждение: .env файл $ENV_FILE не найден. Запускаю контейнер без него."
@@ -86,13 +80,13 @@ else
         --name $CONTAINER_NAME \
         -p $HOST_PORT:$APP_PORT \
         --add-host host.docker.internal:host-gateway \
+        -v ${CONTAINER_NAME}_static:/app/staticfiles \
         $FULL_IMAGE_NAME
 fi
 
 # Проверить, успешно ли запущен контейнер
 if [ $? -eq 0 ]; then
     echo "=== Контейнер успешно запущен ==="
-    # Вывести статус
     sudo docker ps -f name=$CONTAINER_NAME
 else
     echo "Ошибка при запуске контейнера."
@@ -100,8 +94,8 @@ else
 fi
 
 # Ждем несколько секунд, чтобы контейнер полностью стартовал
-echo "Жду 15 секунд, чтобы приложение внутри контейнера стартовало..."
-sleep 15
+echo "Жду 10 секунд, чтобы приложение внутри контейнера стартовало..."
+sleep 10
 
 # Проверить, что контейнер запущен и работает
 if [ ! "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
@@ -110,44 +104,28 @@ if [ ! "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
     exit 1
 fi
 
-# Выполнить collectstatic ПЕРВЫМ, чтобы статика была доступна сразу
-echo "Собираю статические файлы в контейнере $CONTAINER_NAME..."
-sudo docker exec $CONTAINER_NAME $COLLECTSTATIC_COMMAND
+# Выполнить сборку статики внутри контейнера
+echo "Собираю статические файлы в контейнере..."
+sudo docker exec $CONTAINER_NAME python manage.py collectstatic --noinput --clear
 
 if [ $? -eq 0 ]; then
     echo "=== Статические файлы успешно собраны ==="
 else
-    echo "Ошибка при сборе статических файлов в контейнере $CONTAINER_NAME"
-    echo "Продолжаю выполнение, но админка может работать некорректно..."
+    echo "Ошибка при сборе статических файлов"
 fi
 
-# Выполнить makemigrations внутри запущенного контейнера
-echo "Генерирую миграции в контейнере $CONTAINER_NAME..."
-sudo docker exec $CONTAINER_NAME $MAKEMIGRATIONS_COMMAND
-
-if [ $? -eq 0 ]; then
-    echo "=== Генерация миграций завершена ==="
-else
-    echo "Ошибка при генерации миграций в контейнере $CONTAINER_NAME"
-    # Не прерываем выполнение, т.к. миграции могут быть уже созданы
-fi
-
-# Выполнить migrate внутри запущенного контейнера
-echo "Применяю миграции в контейнере $CONTAINER_NAME..."
-sudo docker exec $CONTAINER_NAME $MIGRATE_COMMAND
+# Выполнить миграции
+echo "Применяю миграции..."
+sudo docker exec $CONTAINER_NAME python manage.py migrate
 
 if [ $? -eq 0 ]; then
     echo "=== Миграции успешно применены ==="
 else
-    echo "Ошибка при применении миграций в контейнере $CONTAINER_NAME"
-    exit 1
+    echo "Ошибка при применении миграций"
 fi
 
-# Опционально: создать суперпользователя (раскомментируйте если нужно)
-# echo "Создаю суперпользователя..."
-# sudo docker exec $CONTAINER_NAME bash -c "$CREATE_SUPERUSER_COMMAND"
-
-echo "=== Процесс пересоздания Docker-контейнера, выполнения миграций и сбора статики завершен ==="
+echo "=== Процесс завершен ==="
 echo "Приложение доступно по адресу: http://localhost:$HOST_PORT"
 echo "Админка: http://localhost:$HOST_PORT/admin"
-echo "Для просмотра логов выполните: sudo docker logs -f $CONTAINER_NAME"
+echo "Для проверки статики: http://localhost:$HOST_PORT/static/admin/css/base.css"
+echo "Логи: sudo docker logs -f $CONTAINER_NAME"
