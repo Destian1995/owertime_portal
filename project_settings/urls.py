@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views
 from overtime_app import views
 from overtime_app.views import LogoutView
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -11,4 +12,8 @@ urlpatterns = [
     path('', LogoutView.as_view(next_page='home'), name='logout'),
     path('admin/', admin.site.urls),
     path('lk/', include('overtime_app.urls')),
+    path("lk/file/<str:filename>/", views.serve_text_file, name="serve_text_file"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -76,16 +76,17 @@
     <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Мои последние заявки</h2>
         {% if my_requests %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead class="bg-gray-100">
+        <div class="overflow-x-auto"> <!-- Добавлен overflow-x-auto -->
+            <table class="min-w-full bg-white rounded-lg overflow-hidden"> <!-- min-w-full -->
+                <thead class="bg-gray-100 sticky top-0 z-10"> <!-- sticky для заголовка -->
                 <tr>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">№</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Начало</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Окончание</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Часы</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Причина</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Статус</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[60px]">№</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[120px]">Начало</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[120px]">Окончание</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[60px]">Часы</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[120px]">Причина</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[80px]">Статус</th>
+                    <!-- УБРАНО: Столбец Файл -->
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
@@ -110,6 +111,7 @@
                             {{ req.get_status_display }}
                         </span>
                     </td>
+                    <!-- УБРАНО: Ячейка для файла -->
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -125,16 +127,17 @@
     <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Заявки подчинённых</h2>
         {% if subordinates_requests %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                <thead class="bg-gray-100">
+        <div class="overflow-x-auto"> <!-- Добавлен overflow-x-auto -->
+            <table class="min-w-full bg-white rounded-lg overflow-hidden"> <!-- min-w-full -->
+                <thead class="bg-gray-100 sticky top-0 z-10"> <!-- sticky для заголовка -->
                 <tr>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">ФИО</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Начало</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Окончание</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Часы</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Причина</th>
-                    <th class="py-3 px-4 text-left text-gray-600 font-semibold">Статус</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[100px]">ФИО</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[120px]">Начало</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[120px]">Окончание</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[60px]">Часы</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[120px]">Причина</th>
+                    <th class="py-3 px-4 text-left text-gray-600 font-semibold min-w-[80px]">Статус</th>
+                    <!-- УБРАНО: Столбец Файл -->
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
@@ -168,6 +171,7 @@
                         </span>
                         {% endif %}
                     </td>
+                    <!-- УБРАНО: Ячейка для файла -->
                 </tr>
                 {% endfor %}
                 </tbody>
