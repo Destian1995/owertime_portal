@@ -27,6 +27,7 @@ ENV_FILE="$PROJECT_DIR/.env"
 # Команды для выполнения миграций
 MAKEMIGRATIONS_COMMAND="python manage.py makemigrations"
 MIGRATE_COMMAND="python manage.py migrate"
+COLLECTSTATIC_COMMAND="python manage.py collectstatic --noinput" # Добавленная команда
 
 echo "=== Начинаю процесс пересоздания Docker-контейнера ==="
 
@@ -122,4 +123,15 @@ else
     exit 1
 fi
 
-echo "=== Процесс пересоздания Docker-контейнера и выполнения миграций завершен ==="
+# Выполнить collectstatic внутри запущенного контейнера
+echo "Собираю статические файлы в контейнере $CONTAINER_NAME..."
+sudo docker exec $CONTAINER_NAME $COLLECTSTATIC_COMMAND
+
+if [ $? -eq 0 ]; then
+    echo "=== Статические файлы успешно собраны ==="
+else
+    echo "Ошибка при сборе статических файлов в контейнере $CONTAINER_NAME"
+    exit 1
+fi
+
+echo "=== Процесс пересоздания Docker-контейнера, выполнения миграций и сбора статики завершен ==="
