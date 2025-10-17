@@ -24,7 +24,8 @@ HOST_PORT="8000"
 # Путь к .env файлу (предполагается, что он в PROJECT_DIR)
 ENV_FILE="$PROJECT_DIR/.env"
 
-# Команда для выполнения миграций (предполагается, что manage.py находится в корне проекта в контейнере)
+# Команды для выполнения миграций
+MAKEMIGRATIONS_COMMAND="python manage.py makemigrations"
 MIGRATE_COMMAND="python manage.py migrate"
 
 echo "=== Начинаю процесс пересоздания Docker-контейнера ==="
@@ -97,16 +98,27 @@ fi
 echo "Жду 10 секунд, чтобы приложение внутри контейнера стартовало..."
 sleep 10
 
-# Выполнить миграции внутри запущенного контейнера
-echo "Выполняю миграции в контейнере $CONTAINER_NAME..."
+# Выполнить makemigrations внутри запущенного контейнера
+echo "Генерирую миграции в контейнере $CONTAINER_NAME..."
+sudo docker exec $CONTAINER_NAME $MAKEMIGRATIONS_COMMAND
+
+if [ $? -eq 0 ]; then
+    echo "=== Генерация миграций завершена ==="
+else
+    echo "Ошибка при генерации миграций в контейнере $CONTAINER_NAME"
+    # Опционально: можно остановить контейнер в случае ошибки
+    # sudo docker stop $CONTAINER_NAME
+    exit 1
+fi
+
+# Выполнить migrate внутри запущенного контейнера
+echo "Применяю миграции в контейнере $CONTAINER_NAME..."
 sudo docker exec $CONTAINER_NAME $MIGRATE_COMMAND
 
 if [ $? -eq 0 ]; then
-    echo "=== Миграции успешно выполнены ==="
+    echo "=== Миграции успешно применены ==="
 else
-    echo "Ошибка при выполнении миграций в контейнере $CONTAINER_NAME"
-    # Опционально: можно остановить контейнер в случае ошибки миграций
-    # sudo docker stop $CONTAINER_NAME
+    echo "Ошибка при применении миграций в контейнере $CONTAINER_NAME"
     exit 1
 fi
 
