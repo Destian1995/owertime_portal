@@ -1,21 +1,32 @@
-FROM python:3.11-slim
+# ============ 1. Базовый образ ============
+FROM python:3.12-slim
 
-# Устанавливаем рабочую директорию внутри контейнера
+# ============ 2. Переменные окружения ============
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# ============ 3. Рабочая директория ============
 WORKDIR /app
 
-# Копируем файл зависимостей в рабочую директорию
-COPY requirements.txt .
-
-# Устанавливаем зависимости Python
-# psycopg2-binary может потребовать установку системных пакетов
+# ============ 4. Системные зависимости ============
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir -r requirements.txt
+    libpq-dev gcc && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Копируем исходный код проекта в рабочую директорию
+# ============ 5. Установка зависимостей ============
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ============ 6. Копируем код проекта ============
 COPY . .
 
-# Указываем команду, которая будет выполнена при запуске контейнера
+# ============ 7. WhiteNoise + статика ============
+# Собираем статику внутри образа (важно!)
+RUN python manage.py collectstatic --noinput
+
+# ============ 8. Открываем порт ============
+EXPOSE 8000
+
+# ============ 9. Запуск приложения ============
+# Используем gunicorn для продакшена, он дружит с WhiteNoise
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "project_settings.wsgi:application"]
