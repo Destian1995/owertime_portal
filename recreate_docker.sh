@@ -24,10 +24,11 @@ HOST_PORT="8000"
 # Путь к .env файлу (предполагается, что он в PROJECT_DIR)
 ENV_FILE="$PROJECT_DIR/.env"
 
-# Команды для выполнения миграций
+# Команды для выполнения миграций и статики
 MAKEMIGRATIONS_COMMAND="python manage.py makemigrations"
 MIGRATE_COMMAND="python manage.py migrate"
-COLLECTSTATIC_COMMAND="python manage.py collectstatic --noinput" # Добавленная команда
+COLLECTSTATIC_COMMAND="python manage.py collectstatic --noinput --clear"
+CREATE_SUPERUSER_COMMAND="python manage.py createsuperuser --noinput || true"  # Опционально
 
 echo "=== Начинаю процесс пересоздания Docker-контейнера ==="
 
@@ -41,6 +42,9 @@ if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
     sudo docker stop $CONTAINER_NAME
     echo "Удаляю старый контейнер: $CONTAINER_NAME"
     sudo docker rm $CONTAINER_NAME
+elif [ "$(sudo docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+    echo "Удаляю остановленный контейнер: $CONTAINER_NAME"
+    sudo docker rm $CONTAINER_NAME
 else
     echo "Контейнер с именем $CONTAINER_NAME не найден, продолжаем..."
 fi
@@ -48,7 +52,7 @@ fi
 # Удалить старый образ, если он существует
 if [ "$(sudo docker images -q $IMAGE_NAME 2>/dev/null)" ]; then
     echo "Удаляю старый образ: $FULL_IMAGE_NAME"
-    sudo docker rmi $IMAGE_NAME
+    sudo docker rmi $FULL_IMAGE_NAME
 else
     echo "Образ с именем $IMAGE_NAME не найден, продолжаем..."
 fi
@@ -96,8 +100,26 @@ else
 fi
 
 # Ждем несколько секунд, чтобы контейнер полностью стартовал
-echo "Жду 10 секунд, чтобы приложение внутри контейнера стартовало..."
-sleep 10
+echo "Жду 15 секунд, чтобы приложение внутри контейнера стартовало..."
+sleep 15
+
+# Проверить, что контейнер запущен и работает
+if [ ! "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
+    echo "Ошибка: контейнер $CONTAINER_NAME не запущен. Проверьте логи:"
+    sudo docker logs $CONTAINER_NAME
+    exit 1
+fi
+
+# Выполнить collectstatic ПЕРВЫМ, чтобы статика была доступна сразу
+echo "Собираю статические файлы в контейнере $CONTAINER_NAME..."
+sudo docker exec $CONTAINER_NAME $COLLECTSTATIC_COMMAND
+
+if [ $? -eq 0 ]; then
+    echo "=== Статические файлы успешно собраны ==="
+else
+    echo "Ошибка при сборе статических файлов в контейнере $CONTAINER_NAME"
+    echo "Продолжаю выполнение, но админка может работать некорректно..."
+fi
 
 # Выполнить makemigrations внутри запущенного контейнера
 echo "Генерирую миграции в контейнере $CONTAINER_NAME..."
@@ -107,9 +129,7 @@ if [ $? -eq 0 ]; then
     echo "=== Генерация миграций завершена ==="
 else
     echo "Ошибка при генерации миграций в контейнере $CONTAINER_NAME"
-    # Опционально: можно остановить контейнер в случае ошибки
-    # sudo docker stop $CONTAINER_NAME
-    exit 1
+    # Не прерываем выполнение, т.к. миграции могут быть уже созданы
 fi
 
 # Выполнить migrate внутри запущенного контейнера
@@ -123,15 +143,11 @@ else
     exit 1
 fi
 
-# Выполнить collectstatic внутри запущенного контейнера
-echo "Собираю статические файлы в контейнере $CONTAINER_NAME..."
-sudo docker exec $CONTAINER_NAME $COLLECTSTATIC_COMMAND
-
-if [ $? -eq 0 ]; then
-    echo "=== Статические файлы успешно собраны ==="
-else
-    echo "Ошибка при сборе статических файлов в контейнере $CONTAINER_NAME"
-    exit 1
-fi
+# Опционально: создать суперпользователя (раскомментируйте если нужно)
+# echo "Создаю суперпользователя..."
+# sudo docker exec $CONTAINER_NAME bash -c "$CREATE_SUPERUSER_COMMAND"
 
 echo "=== Процесс пересоздания Docker-контейнера, выполнения миграций и сбора статики завершен ==="
+echo "Приложение доступно по адресу: http://localhost:$HOST_PORT"
+echo "Админка: http://localhost:$HOST_PORT/admin"
+echo "Для просмотра логов выполните: sudo docker logs -f $CONTAINER_NAME"
