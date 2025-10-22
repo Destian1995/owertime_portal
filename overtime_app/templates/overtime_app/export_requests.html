@@ -62,7 +62,7 @@
                     Применить фильтры
                 </button>
 
-                <!-- Кнопка "Создать служебную записку" (изначально скрыта и серая) -->
+                <!-- Кнопка "Создать служебную записку" (всегда видна, но изначально неактивна) -->
                 <div id="createMemoButtonContainer" class="flex flex-col sm:flex-row gap-4">
                     <!-- Используем стиль серой кнопки по умолчанию -->
                     <a href="#" id="createMemoLink" class="bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed" aria-disabled="true">
@@ -136,7 +136,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('filterForm');
-        const buttonContainer = document.getElementById('createMemoButtonContainer');
         const buttonLink = document.getElementById('createMemoLink');
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
@@ -150,7 +149,6 @@
         // Функция обновления стиля и доступности кнопки
         function updateButtonStyle() {
             if (areFiltersActive()) {
-                buttonContainer.style.display = 'flex'; // Показываем контейнер с кнопкой
                 // Обновляем href кнопки с текущими параметрами фильтра
                 const params = new URLSearchParams(new FormData(form)).toString();
                 buttonLink.href = `{% url 'overtime_app:export_requests_word' %}?${params}`;
@@ -158,10 +156,11 @@
                 buttonLink.className = 'bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center cursor-pointer';
                 buttonLink.setAttribute('aria-disabled', 'false');
             } else {
-                buttonContainer.style.display = 'none'; // Скрываем контейнер с кнопкой
-                // (Стиль при скрытии не важен, но можно оставить серый на всякий случай)
-                // buttonLink.className = 'bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed';
-                // buttonLink.setAttribute('aria-disabled', 'true');
+                // Сбрасываем href, чтобы нельзя было перейти по ссылке
+                buttonLink.href = '#';
+                // Меняем стиль на серый и делаем неактивной
+                buttonLink.className = 'bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed';
+                buttonLink.setAttribute('aria-disabled', 'true');
             }
         }
 
