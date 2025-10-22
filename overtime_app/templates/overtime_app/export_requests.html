@@ -62,9 +62,10 @@
                     Применить фильтры
                 </button>
 
-                <!-- Кнопка "Создать служебную записку" (изначально скрыта) -->
+                <!-- Кнопка "Создать служебную записку" (изначально скрыта и серая) -->
                 <div id="createMemoButtonContainer" class="flex flex-col sm:flex-row gap-4">
-                    <a href="#" id="createMemoLink" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center">
+                    <!-- Используем стиль серой кнопки по умолчанию -->
+                    <a href="#" id="createMemoLink" class="bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed" aria-disabled="true">
                         <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
@@ -146,23 +147,29 @@
             return startDateInput.value && endDateInput.value;
         }
 
-        // Функция обновления видимости кнопки
-        function updateButtonVisibility() {
+        // Функция обновления стиля и доступности кнопки
+        function updateButtonStyle() {
             if (areFiltersActive()) {
                 buttonContainer.style.display = 'flex'; // Показываем контейнер с кнопкой
                 // Обновляем href кнопки с текущими параметрами фильтра
                 const params = new URLSearchParams(new FormData(form)).toString();
                 buttonLink.href = `{% url 'overtime_app:export_requests_word' %}?${params}`;
+                // Меняем стиль на зеленый и делаем активной
+                buttonLink.className = 'bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center cursor-pointer';
+                buttonLink.setAttribute('aria-disabled', 'false');
             } else {
                 buttonContainer.style.display = 'none'; // Скрываем контейнер с кнопкой
+                // (Стиль при скрытии не важен, но можно оставить серый на всякий случай)
+                // buttonLink.className = 'bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed';
+                // buttonLink.setAttribute('aria-disabled', 'true');
             }
         }
 
         // Обработчик изменения формы (любое изменение поля фильтра)
-        form.addEventListener('change', updateButtonVisibility);
+        form.addEventListener('change', updateButtonStyle);
 
-        // Инициализация видимости кнопки при загрузке страницы
-        updateButtonVisibility();
+        // Инициализация стиля кнопки при загрузке страницы
+        updateButtonStyle();
     });
 </script>
 
