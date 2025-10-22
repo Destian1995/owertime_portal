@@ -12,7 +12,7 @@
 
     <!-- Форма фильтров -->
     <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 mb-8">
-        <form method="get" class="space-y-6">
+        <form method="get" class="space-y-6" id="filterForm">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div>
                     <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">Причина</label>
@@ -62,14 +62,13 @@
                     Применить фильтры
                 </button>
 
-                <!-- Кнопки экспорта -->
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <!-- Кнопка "Экспортировать в Word" теперь использует обновленную функцию export_requests_word -->
-                    <a href="{% url 'overtime_app:export_requests_word' %}?{{ request.GET.urlencode }}" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center">
+                <!-- Кнопка "Создать служебную записку" (изначально скрыта) -->
+                <div id="createMemoButtonContainer" class="flex flex-col sm:flex-row gap-4">
+                    <a href="#" id="createMemoLink" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center">
                         <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        Экспортировать в Word (Шаблон)
+                        Создать служебную записку
                     </a>
                 </div>
 
@@ -132,4 +131,39 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('filterForm');
+        const buttonContainer = document.getElementById('createMemoButtonContainer');
+        const buttonLink = document.getElementById('createMemoLink');
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+
+        // Функция проверки, активны ли необходимые фильтры
+        function areFiltersActive() {
+            // Проверяем, установлены ли начальная и конечная даты
+            return startDateInput.value && endDateInput.value;
+        }
+
+        // Функция обновления видимости кнопки
+        function updateButtonVisibility() {
+            if (areFiltersActive()) {
+                buttonContainer.style.display = 'flex'; // Показываем контейнер с кнопкой
+                // Обновляем href кнопки с текущими параметрами фильтра
+                const params = new URLSearchParams(new FormData(form)).toString();
+                buttonLink.href = `{% url 'overtime_app:export_requests_word' %}?${params}`;
+            } else {
+                buttonContainer.style.display = 'none'; // Скрываем контейнер с кнопкой
+            }
+        }
+
+        // Обработчик изменения формы (любое изменение поля фильтра)
+        form.addEventListener('change', updateButtonVisibility);
+
+        // Инициализация видимости кнопки при загрузке страницы
+        updateButtonVisibility();
+    });
+</script>
+
 {% endblock %}
