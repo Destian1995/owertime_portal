@@ -13,6 +13,7 @@
     <!-- Форма фильтров -->
     <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 mb-8">
         <form method="get" class="space-y-6" id="filterForm">
+            <input type="hidden" name="filter" value="{{ current_filter }}"> <!-- Сохраняем текущий фильтр -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div>
                     <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">Причина</label>
@@ -63,6 +64,8 @@
                 </button>
 
                 <!-- Кнопка "Создать служебную записку" (всегда видна, но изначально неактивна) -->
+                <!-- Условие: отображать только если is_manager == True И show_subordinates == True -->
+                {% if is_manager and show_subordinates %}
                 <div id="createMemoButtonContainer" class="flex flex-col sm:flex-row gap-4">
                     <!-- Используем стиль серой кнопки по умолчанию -->
                     <a href="#" id="createMemoLink" class="bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed" aria-disabled="true">
@@ -72,6 +75,7 @@
                         Создать служебную записку
                     </a>
                 </div>
+                {% endif %}
 
                 <a href="{% url 'overtime_app:dashboard' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300">
                     Назад
@@ -136,39 +140,46 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('filterForm');
+        // Проверяем, существует ли контейнер кнопки (т.е. is_manager == True и show_subordinates == True)
         const buttonLink = document.getElementById('createMemoLink');
-        const startDateInput = document.getElementById('start_date');
-        const endDateInput = document.getElementById('end_date');
+        if (buttonLink) { // Если кнопка существует
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
 
-        // Функция проверки, активны ли необходимые фильтры
-        function areFiltersActive() {
-            // Проверяем, установлены ли начальная и конечная даты
-            return startDateInput.value && endDateInput.value;
-        }
-
-        // Функция обновления стиля и доступности кнопки
-        function updateButtonStyle() {
-            if (areFiltersActive()) {
-                // Обновляем href кнопки с текущими параметрами фильтра
-                const params = new URLSearchParams(new FormData(form)).toString();
-                buttonLink.href = `{% url 'overtime_app:export_requests_word' %}?${params}`;
-                // Меняем стиль на зеленый и делаем активной
-                buttonLink.className = 'bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center cursor-pointer';
-                buttonLink.setAttribute('aria-disabled', 'false');
-            } else {
-                // Сбрасываем href, чтобы нельзя было перейти по ссылке
-                buttonLink.href = '#';
-                // Меняем стиль на серый и делаем неактивной
-                buttonLink.className = 'bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed';
-                buttonLink.setAttribute('aria-disabled', 'true');
+            // Функция проверки, активны ли необходимые фильтры
+            function areFiltersActive() {
+                // Проверяем, установлены ли начальная и конечная даты
+                return startDateInput.value && endDateInput.value;
             }
+
+            // Функция обновления стиля и доступности кнопки
+            function updateButtonStyle() {
+                if (areFiltersActive()) {
+                    // Обновляем href кнопки с текущими параметрами фильтра
+                    const params = new URLSearchParams(new FormData(form));
+                    // Убедимся, что параметр filter=subordinates сохраняется
+                    params.set('filter', 'subordinates');
+                    const finalParams = params.toString();
+                    buttonLink.href = `{% url 'overtime_app:export_requests_word' %}?${finalParams}`;
+                    // Меняем стиль на зеленый и делаем активной
+                    buttonLink.className = 'bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-xl shadow hover:shadow-md transition-all duration-300 flex items-center justify-center cursor-pointer';
+                    buttonLink.setAttribute('aria-disabled', 'false');
+                } else {
+                    // Сбрасываем href, чтобы нельзя было перейти по ссылке
+                    buttonLink.href = '#';
+                    // Меняем стиль на серый и делаем неактивной
+                    buttonLink.className = 'bg-gray-400 text-white font-medium py-3 px-6 rounded-xl shadow transition-all duration-300 flex items-center justify-center cursor-not-allowed';
+                    buttonLink.setAttribute('aria-disabled', 'true');
+                }
+            }
+
+            // Обработчик изменения формы (любое изменение поля фильтра)
+            form.addEventListener('change', updateButtonStyle);
+
+            // Инициализация стиля кнопки при загрузке страницы
+            updateButtonStyle();
         }
-
-        // Обработчик изменения формы (любое изменение поля фильтра)
-        form.addEventListener('change', updateButtonStyle);
-
-        // Инициализация стиля кнопки при загрузке страницы
-        updateButtonStyle();
+        // Если кнопка не существует (is_manager == False или show_subordinates == False), скрипт ничего не делает с ней.
     });
 </script>
 
