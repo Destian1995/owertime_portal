@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Стили для инпутов */
+input[type="datetime-local"],
+select,
+textarea {
+@apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 transition-colors bg-gray-50 focus:bg-white;
+}
+
+/* Анимация пульсации — мягкий переход цвета */
+@keyframes pulse-glow {
+  0% {
+    border-color: #9ca3af;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+  50% {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+  100% {
+    border-color: #9ca3af;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Пульсация для полей, которые нужно заполнить */
+.pulse-field {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* При фокусе — останавливаем пульсацию и добавляем синий бордер */
+input[type="datetime-local"]:focus,
+textarea:focus {
+@apply outline-none border-blue-500 ring-2 ring-blue-500;
+animation: none;
+}
+
+/* Для flatpickr */
+.flatpickr-input {
+@apply w-full px-4 py-3 border border-gray-300 rounded-lg transition-colors bg-gray-50 focus:bg-white;
+}
+
+/* Для селекта (причина) — не пульсирует, потому что выбор из списка */
+select {
+@apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-gray-50 focus:bg-white;
+}
