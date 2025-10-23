@@ -1,3 +1,4 @@
+<!-- my_requests.html -->
 {% extends 'overtime_app/base.html' %}
 {% load widget_tweaks %}
 
@@ -39,14 +40,14 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                     {% for req in requests %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 whitespace-nowrap">{{ req.id }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">{{ req.hours|floatformat:2 }}</td>
-                        <td class="px-4 py-3 whitespace-normal break-words max-w-[250px]">{{ req.get_reason_display }}</td>
-                        <td class="px-4 py-3 whitespace-normal break-words max-w-[250px]">{{ req.justification }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
+                    <tr class="hover:bg-gray-50 {% if req.status == 'pending' %}cursor-pointer{% endif %}" {% if req.status == 'pending' %}onclick="openEditModal({{ req.id }})"{% endif %}>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ req.id }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ req.hours|floatformat:2 }}</td>
+                    <td class="px-4 py-3 whitespace-normal break-words max-w-[250px]">{{ req.get_reason_display }}</td>
+                    <td class="px-4 py-3 whitespace-normal break-words max-w-[250px]">{{ req.justification }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
                             <span class="px-2 py-1 rounded-full text-xs font-medium
                                 {% if req.status == 'approved' %} bg-green-100 text-green-800
                                 {% elif req.status == 'rejected' %} bg-red-100 text-red-800
@@ -54,29 +55,23 @@
                                 {% else %} bg-gray-100 text-gray-800 {% endif %}">
                                 {{ req.get_status_display }}
                             </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm">
-                            {% if req.attachment %}
-                            <div class="flex flex-col">
-                                <!-- Используем оригинальное имя файла (если оно сохранено) -->
-                                <!-- Предполагаем, что у модели есть поле original_filename -->
-                                <!-- Если такого поля нет, используем req.attachment.name, которое может быть транслитерировано -->
-                                <!-- Для отображения имени файла используем req.attachment.name или req.original_filename -->
-                                <!-- Для ссылки на открытие используем req.get_attachment_view_url -->
-                                <a href="{{ req.get_attachment_view_url }}" target="_blank" rel="noopener noreferrer"
-                                   class="text-blue-600 hover:underline break-words max-w-[200px] inline-block mb-1">
-                                    {{ req.original_filename|default:req.attachment.name }} <!-- Отображаем оригинальное имя -->
-                                </a>
-                                <!-- Кнопка "Сохранить" -->
-                                <a href="{{ req.get_attachment_view_url }}" download
-                                   class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded inline-block text-center w-fit">
-                                    Сохранить
-                                </a>
-                            </div>
-                            {% else %}
-                            <span class="text-gray-500">-</span>
-                            {% endif %}
-                        </td>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if req.attachment %}
+                        <div class="flex flex-col">
+                            <a href="{{ req.get_attachment_view_url }}" target="_blank" rel="noopener noreferrer"
+                               class="text-blue-600 hover:underline break-words max-w-[200px] inline-block mb-1">
+                                {{ req.original_filename|default:req.attachment.name }}
+                            </a>
+                            <a href="{{ req.get_attachment_view_url }}" download
+                               class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded inline-block text-center w-fit">
+                                Сохранить
+                            </a>
+                        </div>
+                        {% else %}
+                        <span class="text-gray-500">-</span>
+                        {% endif %}
+                    </td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -88,5 +83,134 @@
             </div>
         </div>
     </div>
+
+    <!-- Модальное окно редактирования -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">Редактировать заявку #<span id="modalRequestId"></span></h3>
+                    <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="editRequestForm" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" id="editRequestId" name="request_id">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="id_start_datetime" class="block text-sm font-medium text-gray-700">Начало (дата и время)</label>
+                            <input type="datetime-local" name="start_datetime" id="id_start_datetime" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="id_end_datetime" class="block text-sm font-medium text-gray-700">Окончание (дата и время)</label>
+                            <input type="datetime-local" name="end_datetime" id="id_end_datetime" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="id_reason" class="block text-sm font-medium text-gray-700">Причина</label>
+                            <select name="reason" id="id_reason" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <!-- Эти значения должны соответствовать REASON_CHOICES в модели -->
+                                <option value="holiday">Работа в выходной и праздничный день</option>
+                                <option value="incident">Работы по устранению инцидентов</option>
+                                <option value="maintenance">Регламентные работы по обслуживанию системы</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="id_justification" class="block text-sm font-medium text-gray-700">Обоснование</label>
+                            <textarea name="justification" id="id_justification" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        </div>
+                        <div>
+                            <label for="id_attachment" class="block text-sm font-medium text-gray-700">Файл (необязательно)</label>
+                            <input type="file" name="attachment" id="id_attachment" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                            Отмена
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Функция открытия модального окна редактирования
+    function openEditModal(requestId) {
+        document.getElementById('editRequestId').value = requestId;
+        document.getElementById('modalRequestId').textContent = requestId;
+        // Используем URL для получения данных заявки
+        fetch('{% url "overtime_app:get_request_data" request_id=0 %}'.replace('0', requestId))
+            .then(response => {
+            if (!response.ok) {
+                if (response.status === 403) {
+                    return response.json().then(data => { alert(data.error); throw new Error(data.error); });
+                } else {
+                    throw new Error('Сетевой ответ был не ok.');
+                }
+            }
+            return response.json();
+        })
+            .then(data => {
+            // Заполнить поля формы полученными данными
+            document.getElementById('id_start_datetime').value = data.start_datetime ? data.start_datetime.replace('T', ' ').substring(0, 16) : '';
+            document.getElementById('id_end_datetime').value = data.end_datetime ? data.end_datetime.replace('T', ' ').substring(0, 16) : '';
+            document.getElementById('id_reason').value = data.reason; // <-- Теперь будет корректно устанавливать причину
+            document.getElementById('id_justification').value = data.justification || '';
+            // document.getElementById('id_attachment').value = ''; // Поле файла не заполняется
+            document.getElementById('editModal').classList.remove('hidden');
+        })
+            .catch(error => {
+            console.error('Ошибка при загрузке данных заявки:', error);
+            alert('Не удалось загрузить данные заявки для редактирования.');
+        });
+    }
+
+    // Функция закрытия модального окна редактирования
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        document.getElementById('editRequestForm').reset();
+    }
+
+    // Обработка отправки формы редактирования
+    document.getElementById('editRequestForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const requestId = document.getElementById('editRequestId').value;
+        const formData = new FormData(this);
+
+        fetch('{% url "overtime_app:update_request" request_id=0 %}'.replace('0', requestId), { // Используем URL для обновления заявки
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+            .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                return response.json().then(data => { throw new Error(data.error || 'Ошибка сервера'); });
+            }
+        })
+            .then(data => {
+            alert('Заявка успешно обновлена!');
+            closeEditModal();
+            location.reload();
+        })
+            .catch(error => {
+            console.error('Ошибка при обновлении заявки:', error);
+            alert('Произошла ошибка при сохранении заявки: ' + error.message);
+        });
+    });
+
+</script>
 {% endblock %}

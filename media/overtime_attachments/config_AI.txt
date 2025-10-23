@@ -1,0 +1,94 @@
+- name: Ensure node_exporter user exists
+  ansible.builtin.user:
+    name: "{{ node_exporter_user }}"
+    state: present
+    shell: /sbin/nologin
+    create_home: true
+
+- name: Create artifacts directory
+  ansible.builtin.file:
+    path: "{{ node_exporter_artifacts_dir }}"
+    mode: '0755'
+    state: directory
+
+- name: Create node_exporter directories
+  ansible.builtin.file:
+    dest: "{{ item }}"
+    state: directory
+    owner: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+    mode: '0755'
+  loop:
+    - "{{ node_exporter_conf_dir }}"
+    - "{{ node_exporter_bin_dir }}"
+    - "{{ node_exporter_home_dir }}"
+    - "{{ node_exporter_log_dir }}"
+
+- name: Download node_exporter package
+  ansible.builtin.get_url:
+    url: "{{ node_exporter_package_repo }}"
+    dest: "{{ node_exporter_artifacts_dir }}/node_exporter_{{ node_exporter_ver }}.tar.gz"
+    timeout: 60
+    validate_certs: false
+
+- name: Set permissions for node_exporter package
+  ansible.builtin.file:
+    path: "{{ node_exporter_artifacts_dir }}/node_exporter_{{ node_exporter_ver }}.tar.gz"
+    mode: '0640'  # Только владелец может читать файл
+    owner: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+
+- name: Extract node_exporter package
+  ansible.builtin.unarchive:
+    src: "{{ node_exporter_artifacts_dir }}/node_exporter_{{ node_exporter_ver }}.tar.gz"
+    dest: "{{ node_exporter_artifacts_dir }}"
+    mode: '0755'  # Для выполнения
+    owner: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+    remote_src: true
+
+- name: Copy node_exporter binary
+  ansible.builtin.copy:
+    src: "{{ node_exporter_artifacts_dir }}/node_exporter-{{ node_exporter_ver }}.linux-amd64/node_exporter"
+    dest: "{{ node_exporter_binary }}"
+    mode: '0755'  # Для выполнения
+    owner: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+  notify: Restart node_exporter service
+
+
+- name: Generate conf file - {{ node_exporter_conf_file }}
+  ansible.builtin.template:
+    src: node_exporter.conf.j2
+    dest: "{{ node_exporter_conf_file }}"
+    mode: '0644'
+    owner: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+  notify: Restart node_exporter service
+
+- name: Generate systemd service file
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    mode: '0644'
+    owner: "{{ node_exporter_user }}"
+    group: "{{ node_exporter_group }}"
+  notify: Restart node_exporter service
+
+- name: Check if Consul config exists
+  ansible.builtin.stat:
+    path: /etc/consul.d/node_exporter.json
+  register: consul_config
+
+- name: Create Consul config for Node Exporter
+  ansible.builtin.template:
+    src: node_exporter_consul_config.j2
+    dest: /etc/consul.d/node_exporter.json
+    mode: '0644'
+    owner: "consul"
+    group: "consul"
+  when: not consul_config.stat.exists
+  notify: Reload Consul service
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

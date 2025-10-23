@@ -2,6 +2,7 @@
 {% extends 'overtime_app/base.html' %}
 <!-- Важно: загрузить тег static -->
 {% load static %}
+{% load widget_tweaks %} <!-- Добавлен для стилизации форм в модальном окне -->
 
 {% block title %}Личный кабинет{% endblock %}
 
@@ -94,13 +95,13 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                 {% for req in my_requests|slice:":5" %}
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="py-3 px-4">#{{ req.id }}</td>
-                    <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
-                    <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
-                    <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
-                    <td class="py-3 px-4">{{ req.get_reason_display }}</td>
-                    <td class="py-3 px-4">
+                <tr class="hover:bg-gray-50 transition-colors {% if req.status == 'pending' %}cursor-pointer{% endif %}" {% if req.status == 'pending' %}onclick="openEditModal({{ req.id }})"{% endif %}>
+                <td class="py-3 px-4">#{{ req.id }}</td>
+                <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
+                <td class="py-3 px-4">{{ req.get_reason_display }}</td>
+                <td class="py-3 px-4">
                         <span class="px-3 py-1 rounded-full text-sm font-medium
                             {% if req.status == 'approved' %}
                                 bg-green-100 text-green-800
@@ -113,8 +114,8 @@
                             {% endif %}">
                             {{ req.get_status_display }}
                         </span>
-                    </td>
-                    <!-- УБРАНО: Ячейка для файла -->
+                </td>
+                <!-- УБРАНО: Ячейка для файла -->
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -145,22 +146,22 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                 {% for req in subordinates_requests|slice:":5" %}
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="py-3 px-4">{{ req.employee.full_name }}</td>
-                    <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
-                    <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
-                    <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
-                    <td class="py-3 px-4">{{ req.get_reason_display }}</td>
-                    <td class="py-3 px-4">
-                        {% if req.status == 'pending' %}
-                        <!-- Кнопка для глобального dropdown -->
-                        <button type="button"
-                                class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 cursor-pointer hover:bg-yellow-200"
-                                onclick="toggleDropdown({{ req.id }}, this)">
-                            {{ req.get_status_display }}
-                        </button>
-                        {% else %}
-                        <span class="px-3 py-1 rounded-full text-sm font-medium
+                <tr class="hover:bg-gray-50 transition-colors {% if req.status == 'pending' %}cursor-pointer{% endif %}" {% if req.status == 'pending' %}onclick="openEditModal({{ req.id }})"{% endif %}>
+                <td class="py-3 px-4">{{ req.employee.full_name }}</td>
+                <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
+                <td class="py-3 px-4">{{ req.get_reason_display }}</td>
+                <td class="py-3 px-4">
+                    {% if req.status == 'pending' %}
+                    <!-- Кнопка для глобального dropdown -->
+                    <button type="button"
+                            class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 cursor-pointer hover:bg-yellow-200"
+                            onclick="toggleDropdown({{ req.id }}, this)">
+                        {{ req.get_status_display }}
+                    </button>
+                    {% else %}
+                    <span class="px-3 py-1 rounded-full text-sm font-medium
                                 {% if req.status == 'approved' %}
                                     bg-green-100 text-green-800
                                 {% elif req.status == 'rejected' %}
@@ -172,9 +173,9 @@
                                 {% endif %}">
                             {{ req.get_status_display }}
                         </span>
-                        {% endif %}
-                    </td>
-                    <!-- УБРАНО: Ячейка для файла -->
+                    {% endif %}
+                </td>
+                <!-- УБРАНО: Ячейка для файла -->
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -185,6 +186,10 @@
         {% endif %}
     </div>
     {% endif %}
+
+    <!-- Модальное окно редактирования -->
+    {% include 'overtime_app/edit_modal.html' %}
+
 </div>
 {% endblock %}
 
@@ -234,6 +239,77 @@
         }
         document.addEventListener('click', closeDropdown);
     }
+
+    // Функция открытия модального окна редактирования
+    function openEditModal(requestId) {
+        document.getElementById('editRequestId').value = requestId;
+        document.getElementById('modalRequestId').textContent = requestId;
+        // Используем новый URL для получения данных
+        fetch('{% url "overtime_app:get_request_data" request_id=0 %}'.replace('0', requestId))
+            .then(response => {
+            if (!response.ok) {
+                if (response.status === 403) {
+                    return response.json().then(data => { alert(data.error); throw new Error(data.error); });
+                } else {
+                    throw new Error('Сетевой ответ был не ok.');
+                }
+            }
+            return response.json();
+        })
+            .then(data => {
+            // Заполнить поля формы полученными данными
+            document.getElementById('id_start_datetime').value = data.start_datetime ? data.start_datetime.replace('T', ' ').substring(0, 16) : '';
+            document.getElementById('id_end_datetime').value = data.end_datetime ? data.end_datetime.replace('T', ' ').substring(0, 16) : '';
+            document.getElementById('id_reason').value = data.reason;
+            document.getElementById('id_justification').value = data.justification || '';
+            // document.getElementById('id_attachment').value = ''; // Поле файла не заполняется
+            document.getElementById('editModal').classList.remove('hidden');
+        })
+            .catch(error => {
+            console.error('Ошибка при загрузке данных заявки:', error);
+            alert('Не удалось загрузить данные заявки для редактирования.');
+        });
+    }
+
+    // Функция закрытия модального окна редактирования
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        // Сброс формы при закрытии
+        document.getElementById('editRequestForm').reset();
+    }
+
+    // Обработка отправки формы редактирования
+    document.getElementById('editRequestForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const requestId = document.getElementById('editRequestId').value;
+        const formData = new FormData(this);
+
+        fetch('{% url "overtime_app:update_request" request_id=0 %}'.replace('0', requestId), { // Используем новый URL для обновления
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+            .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                return response.json().then(data => { throw new Error(data.error || 'Ошибка сервера'); });
+            }
+        })
+            .then(data => {
+            alert('Заявка успешно обновлена!');
+            closeEditModal();
+            // Перезагрузить страницу или обновить данные в таблице
+            location.reload();
+        })
+            .catch(error => {
+            console.error('Ошибка при обновлении заявки:', error);
+            alert('Произошла ошибка при сохранении заявки: ' + error.message);
+        });
+    });
+
 </script>
 
 {% endblock %}
