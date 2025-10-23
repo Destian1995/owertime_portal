@@ -1,4 +1,7 @@
+<!-- dashboard.html -->
 {% extends 'overtime_app/base.html' %}
+<!-- Важно: загрузить тег static -->
+{% load static %}
 
 {% block title %}Личный кабинет{% endblock %}
 
@@ -197,15 +200,21 @@
         dropdown.id = 'global-dropdown';
         dropdown.className = 'absolute w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50';
         dropdown.innerHTML = `
-        <form method="post" action="/lk/request/${reqId}/change-status/" class="px-4 py-2 hover:bg-gray-100">
+        <form method="post" action="/lk/request/${reqId}/change-status/" class="px-4 py-2 hover:bg-gray-100 flex items-center">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <input type="hidden" name="decision" value="approved">
-            <button type="submit" class="w-full text-left">✅ Согласовать</button>
+            <button type="submit" class="w-full text-left flex items-center">
+                <img src="{% static 'pict/ok.png' %}" alt="Согласовать" style="width: 16px; height: 16px; margin-right: 8px;">
+                Согласовать
+            </button>
         </form>
-        <form method="post" action="/lk/request/${reqId}/change-status/" class="px-4 py-2 hover:bg-gray-100">
+        <form method="post" action="/lk/request/${reqId}/change-status/" class="px-4 py-2 hover:bg-gray-100 flex items-center">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <input type="hidden" name="decision" value="rejected">
-            <button type="submit" class="w-full text-left">❌ Отклонить</button>
+            <button type="submit" class="w-full text-left flex items-center">
+                <img src="{% static 'pict/net.png' %}" alt="Отклонить" style="width: 16px; height: 16px; margin-right: 8px;">
+                Отклонить
+            </button>
         </form>
     `;
 
