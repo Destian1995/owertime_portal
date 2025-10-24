@@ -95,13 +95,13 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                 {% for req in my_requests|slice:":5" %}
-                <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="openEditModal({{ req.id }})">
-                    <td class="py-3 px-4">#{{ req.id }}</td>
-                    <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
-                    <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
-                    <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
-                    <td class="py-3 px-4">{{ req.get_reason_display }}</td>
-                    <td class="py-3 px-4" onclick="event.stopPropagation();">
+                <tr class="hover:bg-gray-50 transition-colors {% if req.status == 'pending' or is_manager %}cursor-pointer{% endif %}" {% if req.status == 'pending' or is_manager %}onclick="openEditModal({{ req.id }})"{% endif %}>
+                <td class="py-3 px-4">#{{ req.id }}</td>
+                <td class="py-3 px-4">{{ req.start_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.end_datetime|date:"d.m.Y H:i" }}</td>
+                <td class="py-3 px-4">{{ req.hours|floatformat:2 }}</td>
+                <td class="py-3 px-4">{{ req.get_reason_display }}</td>
+                <td class="py-3 px-4" onclick="event.stopPropagation();">
                         <span class="px-3 py-1 rounded-full text-sm font-medium
                             {% if req.status == 'approved' %}
                                 bg-green-100 text-green-800
@@ -114,8 +114,8 @@
                             {% endif %}">
                             {{ req.get_status_display }}
                         </span>
-                    </td>
-                    <!-- УБРАНО: Ячейка для файла -->
+                </td>
+                <!-- УБРАНО: Ячейка для файла -->
                 </tr>
                 {% endfor %}
                 </tbody>
