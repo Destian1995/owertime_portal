@@ -146,10 +146,24 @@
 
     // Функция открытия модального окна редактирования
     function openEditModal(requestId) {
-        document.getElementById('editRequestId').value = requestId;
-        document.getElementById('modalRequestId').textContent = requestId;
-        // Используем URL для получения данных заявки
-        fetch('{% url "overtime_app:get_request_data" request_id=0 %}'.replace('0', requestId))
+        // 1. Сначала загрузить список причин
+        fetch('{% url "overtime_app:get_reason_choices" %}')
+            .then(response => response.json())
+            .then(reasonData => {
+            const selectElement = document.getElementById('id_reason');
+            // Очищаем текущие опции
+            selectElement.innerHTML = '';
+            // Заполняем новыми опциями из JSON
+            reasonData.choices.forEach(choice => {
+                const option = document.createElement('option');
+                option.value = choice.value;
+                option.textContent = choice.display;
+                selectElement.appendChild(option);
+            });
+
+            // 2. Теперь, когда список причин обновлён, загрузить данные заявки
+            return fetch('{% url "overtime_app:get_request_data" request_id=0 %}'.replace('0', requestId));
+        })
             .then(response => {
             if (!response.ok) {
                 if (response.status === 403) {
@@ -162,16 +176,19 @@
         })
             .then(data => {
             // Заполнить поля формы полученными данными
+            document.getElementById('editRequestId').value = requestId;
+            document.getElementById('modalRequestId').textContent = requestId;
             document.getElementById('id_start_datetime').value = data.start_datetime ? data.start_datetime.replace('T', ' ').substring(0, 16) : '';
             document.getElementById('id_end_datetime').value = data.end_datetime ? data.end_datetime.replace('T', ' ').substring(0, 16) : '';
-            document.getElementById('id_reason').value = data.reason; // <-- Теперь будет корректно устанавливать причину
+            // Теперь установка value будет работать, так как опция существует
+            document.getElementById('id_reason').value = data.reason;
             document.getElementById('id_justification').value = data.justification || '';
             // document.getElementById('id_attachment').value = ''; // Поле файла не заполняется
             document.getElementById('editModal').classList.remove('hidden');
         })
             .catch(error => {
-            console.error('Ошибка при загрузке данных заявки:', error);
-            alert('Не удалось загрузить данные заявки для редактирования.');
+            console.error('Ошибка при загрузке данных заявки или причин:', error);
+            alert('Не удалось загрузить данные заявки для редактирования: ' + error.message);
         });
     }
 
