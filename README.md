@@ -1,1 +1,2 @@
-https://github.com/Destian1995/owertime_portal/blob/main/%D0%BF%D0%BE%D1%80%D1%82%D0%B0%D0%BB.jpg
+<img width="1477" height="938" alt="изображение" src="https://github.com/user-attachments/assets/c88787b2-b6b2-47c2-a4d1-6c3943fbd56d" />
+
